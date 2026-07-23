@@ -257,10 +257,10 @@
   .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
 </style>
 </head>
-<body>
+<body style="visibility:hidden;">
 
 <!-- 加载遮罩：CSS/JS 未就绪时遮挡裸 HTML -->
-<div id="appLoader" style="position:fixed;inset:0;z-index:9999;background:#efe7d9;display:flex;align-items:center;justify-content:center;">
+<div id="appLoader" style="position:fixed;inset:0;z-index:9999;background:#efe7d9;display:flex;align-items:center;justify-content:center;visibility:visible;">
   <span style="font-family:serif;font-size:1.3rem;color:#6c5f52;letter-spacing:.1em;">物品价值</span>
 </div>
 
@@ -1109,7 +1109,8 @@ preloadPresets();
 renderHomeHistory();
 buildStyler();
 
-// 移除加载遮罩
+// 移除加载遮罩，恢复 body 可见
+document.body.style.visibility='visible';
 var loader=document.getElementById('appLoader');
 if(loader){loader.style.opacity='0';loader.style.transition='opacity .3s';setTimeout(function(){loader.remove();},300);}
 
