@@ -194,11 +194,39 @@
   .st-colors{display:flex;flex-wrap:wrap;gap:.6rem 1rem;}
   .st-color-grp{display:flex;flex-direction:column;align-items:center;gap:.3rem;}
   .st-color-grp span{font-size:.64rem;color:var(--ink-soft);letter-spacing:.04em;}
-  .st-color-grp label{display:block;width:40px;height:40px;border-radius:8px;border:1px solid rgba(42,36,30,.16);overflow:hidden;cursor:pointer;background:#fff;position:relative;}
-  .st-color-grp input[type=color]{
-    width:100%;height:100%;border:none;padding:0;margin:0;
-    cursor:pointer;opacity:0;position:absolute;top:0;left:0;
+  .st-color-grp button{display:block;width:40px;height:40px;border-radius:8px;border:1px solid rgba(42,36,30,.16);cursor:pointer;padding:0;transition:transform .15s;}
+  .st-color-grp button:active{transform:scale(.92);}
+
+  /* 颜色选择面板 */
+  .color-picker{
+    position:fixed;inset:0;z-index:88;background:rgba(20,16,12,.7);
+    display:none;align-items:flex-end;justify-content:center;
   }
+  .color-picker.show{display:flex;}
+  .color-picker-sheet{
+    background:var(--paper);border-radius:18px 18px 0 0;width:100%;max-width:420px;
+    padding:1.2rem 1.1rem calc(1.2rem + env(safe-area-inset-bottom));
+  }
+  .color-picker-sheet h4{font-family:var(--serif);font-weight:600;font-size:1rem;color:var(--ink);margin-bottom:.9rem;text-align:center;}
+  .color-grid{display:grid;grid-template-columns:repeat(8,1fr);gap:.5rem;margin-bottom:1rem;}
+  .color-grid button{width:100%;aspect-ratio:1;border-radius:8px;border:2px solid transparent;cursor:pointer;padding:0;transition:transform .12s;}
+  .color-grid button:active{transform:scale(.88);}
+  .color-grid button.sel{border-color:var(--ink);}
+  .cp-custom{padding:.7rem .9rem;background:var(--cream-2);border-radius:10px;margin-bottom:1rem;}
+  .cp-custom-row{display:flex;align-items:center;gap:.7rem;margin-bottom:.6rem;}
+  .cp-custom-row:last-child{margin-bottom:0;}
+  .cp-custom-row label{font-size:.72rem;color:var(--ink-soft);letter-spacing:.04em;flex:0 0 2.2rem;}
+  .cp-slider{-webkit-appearance:none;appearance:none;flex:1;height:28px;border-radius:6px;outline:none;cursor:pointer;}
+  .cp-slider::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:22px;height:22px;border-radius:50%;background:#fff;border:2px solid var(--ink);cursor:pointer;box-shadow:0 1px 4px rgba(0,0,0,.3);}
+  .cp-slider::-moz-range-thumb{width:22px;height:22px;border-radius:50%;background:#fff;border:2px solid var(--ink);cursor:pointer;box-shadow:0 1px 4px rgba(0,0,0,.3);}
+  .cp-val{font-family:monospace;font-size:.76rem;color:var(--ink);flex:0 0 2.5rem;text-align:right;}
+  .cp-preview{display:flex;align-items:center;gap:.7rem;margin-bottom:.7rem;}
+  .cp-preview-box{width:40px;height:40px;border-radius:8px;border:1px solid rgba(42,36,30,.16);}
+  .cp-preview-hex{font-family:monospace;font-size:.86rem;color:var(--ink);text-transform:uppercase;}
+  .color-picker-actions{display:flex;gap:.7rem;}
+  .color-picker-actions button{flex:1;border:none;border-radius:999px;padding:.8rem;font-size:.92rem;letter-spacing:.05em;cursor:pointer;}
+  .color-picker-actions .cp-cancel{background:transparent;color:var(--ink-soft);border:1px solid rgba(42,36,30,.16);}
+  .color-picker-actions .cp-confirm{background:var(--ink);color:var(--warm-white);}
 
   /* ===== CROP ===== */
   .crop{padding-bottom:calc(6vh + env(safe-area-inset-bottom));}
@@ -406,6 +434,39 @@
   <img id="savePreview" alt="价值卡图片" />
   <p id="saveModalText">如果没有弹出系统保存面板，请长按这张图片，选择「保存图片」或「添加到照片」。</p>
   <button onclick="closeSaveModal()">关闭</button>
+</div>
+
+<!-- 颜色选择面板 -->
+<div class="color-picker" id="colorPicker">
+  <div class="color-picker-sheet">
+    <h4 id="cpTitle">选择颜色</h4>
+    <div class="color-grid" id="colorGrid"></div>
+    <div class="cp-custom">
+      <div class="cp-preview">
+        <div class="cp-preview-box" id="cpPreviewBox"></div>
+        <span class="cp-preview-hex" id="cpPreviewHex">#F4ECDF</span>
+      </div>
+      <div class="cp-custom-row">
+        <label>色相</label>
+        <input type="range" class="cp-slider" id="cpH" min="0" max="360" value="40">
+        <span class="cp-val" id="cpHVal">40</span>
+      </div>
+      <div class="cp-custom-row">
+        <label>饱和</label>
+        <input type="range" class="cp-slider" id="cpS" min="0" max="100" value="50">
+        <span class="cp-val" id="cpSVal">50</span>
+      </div>
+      <div class="cp-custom-row">
+        <label>明度</label>
+        <input type="range" class="cp-slider" id="cpL" min="0" max="100" value="90">
+        <span class="cp-val" id="cpLVal">90</span>
+      </div>
+    </div>
+    <div class="color-picker-actions">
+      <button class="cp-cancel" onclick="closeColorPicker()">取消</button>
+      <button class="cp-confirm" onclick="confirmColor()">确定</button>
+    </div>
+  </div>
 </div>
 
 <div class="toast" id="toast"></div>
@@ -994,17 +1055,112 @@ function buildStyler(){
   [['bg','背景'],['title','标题'],['accent','正文'],['namec','名称'],['pricec','价格'],['sub','回忆'],['foot','页脚'],['strike','划线']].forEach(function(p){
     var g=document.createElement('div');g.className='st-color-grp';
     var hex=normalizeHex(cardTheme[p[0]]);
-    g.innerHTML='<span>'+p[1]+'</span><label style="background:'+hex+'"><input type="color" data-key="'+p[0]+'" value="'+hex+'"></label>';
+    g.innerHTML='<span>'+p[1]+'</span><button class="cp-btn" data-key="'+p[0]+'" style="background:'+hex+'"></button>';
     tc.appendChild(g);
   });
-  tc.querySelectorAll('input[type=color]').forEach(function(inp){
-    inp.addEventListener('input',function(){
-      cardTheme[this.getAttribute('data-key')]=this.value;
-      this.parentElement.style.background=this.value;
-      drawCard();
-    });
+  tc.querySelectorAll('.cp-btn').forEach(function(btn){
+    btn.onclick=function(){openColorPicker(this.getAttribute('data-key'),this.getAttribute('data-label'));};
   });
   syncStyler();
+}
+// 预设颜色盘
+var CP_COLORS=[
+  '#f4ecdf','#e6dcc9','#d4c4a0','#c8d4c0','#dde4e0','#e8e6e1','#f0e6d2','#f5dde3',
+  '#2a241e','#3a322a','#1d1813','#0f1623','#4a3520','#2a4a32','#1e3a34','#2a2a30',
+  '#6c5f52','#8a6f55','#88888f','#4a665e','#46604a','#6b5038','#5a7570','#4a4a50',
+  '#b5532f','#c0392b','#d4507a','#9c3a5e','#5a8acc','#2d6a5f','#3d7a45','#8b5a2b',
+  '#f6efe2','#ffffff','#fff8e7','#e8d5b7','#c9bca0','#a89888','#7a6a5a','#5a4a3a',
+  '#000000','#1a1a1a','#333333','#555555','#777777','#999999','#bbbbbb','#dddddd'
+];
+var cpTargetKey=null;
+var cpTargetBtn=null;
+var cpTempColor=null;
+function openColorPicker(key){
+  cpTargetKey=key;
+  cpTargetBtn=document.querySelector('.cp-btn[data-key="'+key+'"]');
+  var labels={'bg':'背景','title':'标题','accent':'正文','namec':'名称','pricec':'价格','sub':'回忆','foot':'页脚','strike':'划线'};
+  $('cpTitle').textContent='选择颜色 · '+(labels[key]||key);
+  cpTempColor=normalizeHex(cardTheme[key]);
+  // 预设色块
+  var grid=$('colorGrid');grid.innerHTML='';
+  CP_COLORS.forEach(function(c){
+    var b=document.createElement('button');b.style.background=c;b.setAttribute('data-c',c);
+    if(c.toLowerCase()===cpTempColor.toLowerCase()){b.classList.add('sel');}
+    b.onclick=function(){
+      cpTempColor=c;
+      grid.querySelectorAll('button').forEach(function(x){x.classList.remove('sel');});
+      b.classList.add('sel');
+      syncSliders(c);
+    };
+    grid.appendChild(b);
+  });
+  // HSL 滑块
+  syncSliders(cpTempColor);
+  ['cpH','cpS','cpL'].forEach(function(id){
+    $(id).oninput=function(){
+      var h=+$('cpH').value,s=+$('cpS').value,l=+$('cpL').value;
+      $('cpHVal').textContent=h;$('cpSVal').textContent=s;$('cpLVal').textContent=l;
+      var hex=hslToHex(h,s,l);
+      cpTempColor=hex;
+      updateSliderTracks(h,s,l);
+      $('cpPreviewBox').style.background=hex;
+      $('cpPreviewHex').textContent=hex.toUpperCase();
+      grid.querySelectorAll('button').forEach(function(x){x.classList.remove('sel');});
+    };
+  });
+  $('colorPicker').classList.add('show');
+}
+function syncSliders(hex){
+  var hsl=hexToHsl(hex);
+  $('cpH').value=hsl.h;$('cpS').value=hsl.s;$('cpL').value=hsl.l;
+  $('cpHVal').textContent=hsl.h;$('cpSVal').textContent=hsl.s;$('cpLVal').textContent=hsl.l;
+  $('cpPreviewBox').style.background=hex;
+  $('cpPreviewHex').textContent=hex.toUpperCase();
+  updateSliderTracks(hsl.h,hsl.s,hsl.l);
+}
+function updateSliderTracks(h,s,l){
+  // 色相条：饱和度和明度固定，展示完整色相
+  $('cpH').style.background='linear-gradient(to right,'+
+    ['hsl(0,'+s+'%,'+l+'%)','hsl(60,'+s+'%,'+l+'%)','hsl(120,'+s+'%,'+l+'%)','hsl(180,'+s+'%,'+l+'%)','hsl(240,'+s+'%,'+l+'%)','hsl(300,'+s+'%,'+l+'%)','hsl(360,'+s+'%,'+l+'%)'].join(',')+')';
+  // 饱和度条：色相固定，从灰到纯色
+  $('cpS').style.background='linear-gradient(to right,hsl('+h+',0%,'+l+'%),hsl('+h+',100%,'+l+'%))';
+  // 明度条：色相和饱和度固定，从黑到白
+  $('cpL').style.background='linear-gradient(to right,hsl('+h+','+s+'%,0%),hsl('+h+','+s+'%,50%),hsl('+h+','+s+'%,100%))';
+}
+function hexToHsl(hex){
+  hex=hex.replace('#','');
+  var r=parseInt(hex.substr(0,2),16)/255,g=parseInt(hex.substr(2,2),16)/255,b=parseInt(hex.substr(4,2),16)/255;
+  var mx=Math.max(r,g,b),mn=Math.min(r,g,b),d=mx-mn;
+  var h=0,s=0,l=(mx+mn)/2;
+  if(d!==0){
+    s=l>0.5?d/(2-mx-mn):d/(mx+mn);
+    if(mx===r){h=((g-b)/d+(g<b?6:0));}
+    else if(mx===g){h=((b-r)/d+2);}
+    else{h=((r-g)/d+4);}
+    h*=60;
+  }
+  return{h:Math.round(h),s:Math.round(s*100),l:Math.round(l*100)};
+}
+function hslToHex(h,s,l){
+  s/=100;l/=100;
+  var c=(1-Math.abs(2*l-1))*s,x=c*(1-Math.abs((h/60)%2-1)),m=l-c/2;
+  var r=0,g=0,b=0;
+  if(h<60){r=c;g=x;}else if(h<120){r=x;g=c;}else if(h<180){g=c;b=x;}
+  else if(h<240){g=x;b=c;}else if(h<300){r=x;b=c;}else{r=c;b=x;}
+  var h2=function(n){n=Math.round((n+m)*255);n=n.toString(16);return n.length===1?'0'+n:n;};
+  return'#'+h2(r)+h2(g)+h2(b);
+}
+function confirmColor(){
+  if(cpTargetKey&&cpTempColor){
+    cardTheme[cpTargetKey]=cpTempColor;
+    if(cpTargetBtn){cpTargetBtn.style.background=cpTempColor;}
+    drawCard();
+  }
+  closeColorPicker();
+}
+function closeColorPicker(){
+  $('colorPicker').classList.remove('show');
+  cpTargetKey=null;cpTargetBtn=null;cpTempColor=null;
 }
 // 应用预设主题（浅拷贝，避免修改预设原始数据）
 function applyTheme(i){
@@ -1020,11 +1176,9 @@ function syncStyler(){
   document.querySelectorAll('.st-tint').forEach(function(t){
     t.classList.toggle('sel',t.getAttribute('data-tint')===cardTheme.tint);
   });
-  document.querySelectorAll('.st-colors input[type=color]').forEach(function(inp){
-    var k=inp.getAttribute('data-key');
-    var hex=normalizeHex(cardTheme[k]);
-    inp.value=hex;
-    inp.parentElement.style.background=hex;
+  document.querySelectorAll('.st-colors .cp-btn').forEach(function(btn){
+    var k=btn.getAttribute('data-key');
+    btn.style.background=normalizeHex(cardTheme[k]);
   });
 }
 function fontStack(k){return k==='serif'?'\'Noto Serif SC\',serif':'\'Noto Sans SC\',sans-serif';}
