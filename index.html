@@ -259,6 +259,11 @@
 </head>
 <body>
 
+<!-- 加载遮罩：CSS/JS 未就绪时遮挡裸 HTML -->
+<div id="appLoader" style="position:fixed;inset:0;z-index:9999;background:#efe7d9;display:flex;align-items:center;justify-content:center;">
+  <span style="font-family:serif;font-size:1.3rem;color:#6c5f52;letter-spacing:.1em;">物品价值</span>
+</div>
+
 <!-- ===== LANDING ===== -->
 <section class="screen landing active" id="screen-landing">
   <div class="hero">
@@ -1103,6 +1108,10 @@ buildThumbs();
 preloadPresets();
 renderHomeHistory();
 buildStyler();
+
+// 移除加载遮罩
+var loader=document.getElementById('appLoader');
+if(loader){loader.style.opacity='0';loader.style.transition='opacity .3s';setTimeout(function(){loader.remove();},300);}
 
 // 手机物理返回键：逐屏后退，首页再按返回才退出网页
 window.addEventListener('popstate',function(e){
