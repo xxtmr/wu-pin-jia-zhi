@@ -4,7 +4,7 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
 <meta name="theme-color" content="#2a241e" />
-<title>物品价值</title>
+<title>物品价值 · Demo</title>
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500&family=Noto+Serif+SC:wght@400;600;900&display=swap" rel="stylesheet" />
@@ -424,6 +424,7 @@ var PRESETS=[
 var current={imgEl:null,imgSrc:null,name:'',price:'',value:'',memory:''};
 var editingId=null;
 var resultReturnTo='screen-landing';
+var currentScreen='screen-landing';
 // 卡片主题：tint=底纹类型(none/grid/dots/stripes)，bg=卡背景，title="物品价值"标题色，accent=主价值文字色，namec=物品名称色，pricec=票面价格色，sub=回忆副文字色，foot=页脚文字色，strike=划线色
 var CARD_THEMES=[
   {name:'暖米原色',tint:'dots',bg:'#f4ecdf',title:'rgba(246,239,226,.9)',accent:'#2a241e',namec:'#6c5f52',pricec:'#6c5f52',sub:'#6c5f52',foot:'rgba(108,95,82,.7)',strike:'#b5532f'},
@@ -452,6 +453,11 @@ function go(id){
   if(id==='screen-result'){startReveal();}
   if(id==='screen-landing'){renderHomeHistory();}
   if(id==='screen-history'){renderHistory();}
+  // 记录浏览器历史，让手机物理返回键能逐屏后退
+  if(id!==currentScreen){
+    history.pushState({screen:id},'',location.pathname);
+    currentScreen=id;
+  }
 }
 function backFromResult(){
   go(resultReturnTo);
@@ -1091,6 +1097,23 @@ buildThumbs();
 preloadPresets();
 renderHomeHistory();
 buildStyler();
+
+// 手机物理返回键：逐屏后退，首页再按返回才退出网页
+window.addEventListener('popstate',function(e){
+  var prev='screen-landing';
+  // 根据当前屏幕决定后退到哪个屏幕
+  if(currentScreen==='screen-result'){prev=resultReturnTo;}
+  else if(currentScreen==='screen-create'){prev='screen-landing';}
+  else if(currentScreen==='screen-crop'){prev='screen-create';}
+  else if(currentScreen==='screen-history'){prev='screen-landing';}
+  // 静默切换（不再 pushState，避免循环）
+  document.querySelectorAll('.screen').forEach(function(s){s.classList.remove('active');});
+  $(prev).classList.add('active');
+  $(prev).scrollTop=0;
+  if(prev==='screen-landing'){renderHomeHistory();}
+  if(prev==='screen-result'){startReveal();}
+  currentScreen=prev;
+});
 </script>
 </body>
 </html>
